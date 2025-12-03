@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Simple Chat Frontend</title>
+  <style>
+    :root{
+      --bg:#0f1724;
+      --card:#0b1220;
+      --muted:#98a0b3;
+      --accent:#6ee7b7;
+      --input:#0b1226;
+      --glass: rgba(255,255,255,0.03);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#071020 0%,#071623 100%);color:#e6eef6}
+    .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+    .card{
+      width:100%;max-width:760px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:14px;padding:18px;box-shadow:0 6px 30px rgba(2,6,23,0.6);backdrop-filter: blur(6px);
+      display:flex;flex-direction:column;gap:12px;
+    }
+    header{display:flex;align-items:center;gap:12px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.03)}
+    .logo{
+      width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#60a5fa);display:flex;align-items:center;justify-content:center;font-weight:700;color:#05222b;
+      box-shadow:0 4px 14px rgba(0,0,0,0.5)
+    }
+    h1{font-size:18px;margin:0}
+    p.sub{margin:0;color:var(--muted);font-size:13px}
+    main.chat{flex:1;display:flex;flex-direction:column;gap:12px;padding:12px 6px;overflow:auto;max-height:60vh}
+    .msg{max-width:78%;padding:10px 12px;border-radius:12px;line-height:1.35;font-size:14px}
+    .user{margin-left:auto;background:linear-gradient(180deg,#072b2b,#06403b);border:1px solid rgba(255,255,255,0.03)}
+    .bot{margin-right:auto;background:linear-gradient(180deg,#08102a,#071126);border:1px solid rgba(255,255,255,0.02);color:#dbe9ff}
+    .meta{font-size:11px;color:var(--muted);margin-top:6px}
+    form.controls{display:flex;gap:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.02)}
+    textarea.input{
+      flex:1;min-height:44px;max-height:140px;padding:10px;border-radius:10px;background:var(--input);border:1px solid rgba(255,255,255,0.03);color:inherit;resize:vertical;
+      font-family:inherit;font-size:14px;outline:none
+    }
+    button.send{
+      min-width:88px;padding:0 14px;border-radius:10px;background:linear-gradient(180deg,var(--accent),#34d399);border:none;color:#04201a;font-weight:600;cursor:pointer;
+      box-shadow:0 6px 18px rgba(16,185,129,0.12)
+    }
+    button.send[disabled]{opacity:0.6;cursor:default}
+    .small{font-size:12px;color:var(--muted)}
+    .meta-link{color:#9fd3ff;text-decoration:underline;cursor:pointer}
+    @media (max-width:520px){
+      .card{padding:12px}
+      .logo{width:36px;height:36px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" role="main" aria-live="polite">
+      <header>
+        <div class="logo">AI</div>
+        <div>
+          <h1>Simple Chat Frontend</h1>
+          <p class="sub">Minimal HTML + JS UI — posts to your backend and displays replies.</p>
+        </div>
+      </header>
+
+      <main id="chat" class="chat" aria-live="polite" tabindex="0">
+        <!-- messages will be appended here -->
+        <div class="meta small">Tip: This UI expects an endpoint that accepts JSON `{ message: "..."}`
+          and returns JSON `{ reply: "..." }`.</div>
+      </main>
+
+      <form id="form" class="controls" autocomplete="off" onsubmit="return false;">
+        <textarea id="input" class="input" name="message" placeholder="Type your message... (Shift+Enter for newline)"></textarea>
+        <button id="sendBtn" class="send" type="submit">Send</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // === Configuration ===
+    // Change this to the actual server endpoint that handles messages.
+    const API_ENDPOINT = '/api/message'; // POST { message: string } -> responds { reply: string }
+
+    // === DOM refs ===
+    const chat = document.getElementById('chat');
+    const input = document.getElementById('input');
+    const sendBtn = document.getElementById('sendBtn');
+    const form = document.getElementById('form');
+
+    // Helper to create and append a message bubble
+    function appendMessage(text, who='bot') {
+      const div = document.createElement('div');
+      div.className = 'msg ' + (who === 'user' ? 'user' : 'bot');
+      div.textContent = text;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+      return div;
+    }
+
+    // display a small meta line (optional)
+    function appendMeta(text) {
+      const m = document.createElement('div');
+      m.className = 'meta small';
+      m.innerHTML = text;
+      chat.appendChild(m);
+    }
+
+    // Send message to backend
+    async function sendMessage(message) {
+      // Append user message immediately
+      appendMessage(message, 'user');
+
+      // show a temporary "typing" bot bubble
+      const loading = appendMessage('…', 'bot');
+
+      // disable while sending
+      sendBtn.disabled = true;
+      input.disabled = true;
+
+      try {
+        const res = await fetch(API_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message })
+        });
+
+        if (!res.ok) {
+          throw new Error('Server returned ' + res.status);
+        }
+
+        const data = await res.json();
+        // Expecting { reply: "..." } — adapt if your API differs
+        loading.textContent = (data && (data.reply ?? data.response ?? data.result)) || 'No reply';
+      } catch (err) {
+        console.error(err);
+        loading.textContent = 'Error: ' + (err.message || 'request failed');
+      } finally {
+        sendBtn.disabled = false;
+        input.disabled = false;
+        input.focus();
+      }
+    }
+
+    // keyboard behaviour: Enter = send, Shift+Enter = newline
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        triggerSend();
+      }
+    });
+
+    function triggerSend() {
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+      sendMessage(text);
+    }
+
+    sendBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      triggerSend();
+    });
+
+    // OPTIONAL: add a quick welcome message
+    appendMeta('Local demo — change <code>API_ENDPOINT</code> to your backend. For server examples, try POST /api/message expecting JSON { message } and returning { reply }.');
+
+    // Focus the input on load
+    input.focus();
+
+    // Expose for debugging in console
+    window.simpleChat = { appendMessage, sendMessage };
+  </script>
+</body>
+</html>
