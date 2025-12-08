@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>C to Python Translator</title>
+</head>
+<body>
+    <h2>Code Translator (Llama2)</h2>
+    <form method="post">
+        <label for="source_language">From:</label>
+        <select name="source_language">
+            <option value="C" {% if source_language == 'C' %}selected{% endif %}>C</option>
+            <option value="Python" {% if source_language == 'Python' %}selected{% endif %}>Python</option>
+            <option value="Java" {% if source_language == 'Java' %}selected{% endif %}>Java</option>
+            <option value="JavaScript" {% if source_language == 'JavaScript' %}selected{% endif %}>JavaScript</option>
+            <option value="C++" {% if source_language == 'C++' %}selected{% endif %}>C++</option>
+            <option value="C#" {% if source_language == 'C#' %}selected{% endif %}>C#</option>
+            <option value="Go" {% if source_language == 'Go' %}selected{% endif %}>Go</option>
+            <option value="Rust" {% if source_language == 'Rust' %}selected{% endif %}>Rust</option>
+            <option value="Ruby" {% if source_language == 'Ruby' %}selected{% endif %}>Ruby</option>
+            <option value="PHP" {% if source_language == 'PHP' %}selected{% endif %}>PHP</option>
+        </select>
+        <label for="target_language">To:</label>
+        <select name="target_language">
+            <option value="Python" {% if target_language == 'Python' %}selected{% endif %}>Python</option>
+            <option value="C" {% if target_language == 'C' %}selected{% endif %}>C</option>
+            <option value="Java" {% if target_language == 'Java' %}selected{% endif %}>Java</option>
+            <option value="JavaScript" {% if target_language == 'JavaScript' %}selected{% endif %}>JavaScript</option>
+            <option value="C++" {% if target_language == 'C++' %}selected{% endif %}>C++</option>
+            <option value="C#" {% if target_language == 'C#' %}selected{% endif %}>C#</option>
+            <option value="Go" {% if target_language == 'Go' %}selected{% endif %}>Go</option>
+            <option value="Rust" {% if target_language == 'Rust' %}selected{% endif %}>Rust</option>
+            <option value="Ruby" {% if target_language == 'Ruby' %}selected{% endif %}>Ruby</option>
+            <option value="PHP" {% if target_language == 'PHP' %}selected{% endif %}>PHP</option>
+        </select><br><br>
+        <textarea name="source_code" rows="10" cols="60" placeholder="Paste your code here">{{ request.form.source_code or '' }}</textarea><br>
+        <button type="submit">Translate</button>
+    </form>
+    <h3>Output:</h3>
+    <pre>{{ output_code }}</pre>
+</body>
+</html>
