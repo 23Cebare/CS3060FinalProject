@@ -41,24 +41,14 @@ def is_valid_code(code, language):
 def translate_code(source_code, source_language, target_language):
     prompt = (
         "You are a code translation agent.\n"
-        "Before doing anything else, inspect the user input and classify is as either:\n"
-        "1.Code\n" 
-        "2. Not code\n\n"
-
-        "If the input is NOT code, reply exactly with:\n" 
-        "Error: this is not code.\n\n"
-        
-        f"If the input IS code, then translate it strictly from {source_language} to {target_language}."
-       
+        f"If the input is not valid {source_language} code, reply with 'ERROR: This is not code.'\n"
+        f"If the input IS code, then translate it strictly from {source_language} to {target_language}. "
         f"Only output valid {target_language} code, no explanations or comments. "
         f"Output ONLY a code block in this format:\n"
         f"```{target_language.lower()}\n<code>\n``` and nothing else. "
-
         "If the input code is incomplete or ambiguous, reply with 'ERROR: Please clarify the input.' "
-
         "If translation is not possible, reply with 'ERROR: Cannot translate this code.'\n\n"
         f"{source_language} code:\n{source_code}\n\n{target_language} code:"
-        "If the input is not code, reply with 'Error: this is not code'\n"
     )
     response = requests.post(OLLAMA_API_URL, json={
         "model": MODEL_NAME,
